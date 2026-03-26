@@ -1,631 +1,510 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 const CONDITION_MULT = { Mint: 1.2, Excellent: 1.0, Good: 0.8, Fair: 0.55, Poor: 0.35 };
 const CONDITIONS = Object.keys(CONDITION_MULT);
-const RARITY_STYLE = {
-  Common:         'bg-slate-100 text-slate-500',
-  Uncommon:       'bg-green-50 text-green-700',
-  Rare:           'bg-blue-50 text-blue-700',
-  'Very Rare':    'bg-purple-50 text-purple-700',
-  'Extremely Rare':'bg-amber-50 text-amber-700',
+const RARITY_PILL = {
+  Common:          null,
+  Uncommon:        { bg: '#F0FDF4', text: '#16A34A', border: '#BBF7D0' },
+  Rare:            { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' },
+  'Very Rare':     { bg: '#FAF5FF', text: '#7C3AED', border: '#DDD6FE' },
+  'Extremely Rare':{ bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
 };
-const TABS = [
-  { id: 'home',  label: 'Home',  icon: HomeIcon },
-  { id: 'scan',  label: 'Scan',  icon: null },
-  { id: 'rooms', label: 'Rooms', icon: RoomsIcon },
-];
 
-// ─── SVG Icons ───────────────────────────────────────────────────────────────
-function HomeIcon({ active }) {
+// ─── Logo SVG ─────────────────────────────────────────────────────────────────
+function Logo({ size = 'md' }) {
+  const h = size === 'sm' ? 18 : 22;
   return (
-    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active ? '#0284c7' : '#94a3b8'} strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  );
-}
-function RoomsIcon({ active }) {
-  return (
-    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active ? '#0284c7' : '#94a3b8'} strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-    </svg>
-  );
-}
-function AccountIcon({ active }) {
-  return (
-    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active ? '#0284c7' : '#94a3b8'} strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-}
-function CopyIcon() {
-  return (
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
-  );
-}
-function EmptyHouse() {
-  return (
-    <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 44L48 12L84 44" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M20 36V80H76V36" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M36 80V56H60V80" stroke="#cbd5e1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M36 40H44V48H36V40Z" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
-      <path d="M52 40H60V48H52V40Z" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round"/>
-    </svg>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+      <svg width={h} height={h} viewBox="0 0 24 24" fill="none">
+        <path d="M3 10.5L12 3L21 10.5V21H15V15H9V21H3V10.5Z" fill="#0066FF" fillOpacity="0.12" stroke="#0066FF" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d="M9 21V15H15V21" stroke="#0066FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{ fontFamily: 'Georgia, serif', fontWeight: 700, fontSize: size === 'sm' ? 17 : 21, color: '#0F172A', letterSpacing: '-0.5px' }}>estate</span>
+    </div>
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const Icon = ({ d, size = 20, color = '#94A3B8', strokeWidth = 1.6 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function resizeImage(file) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = e => {
       const img = new Image();
       img.onload = () => {
         const MAX = 1024;
-        let w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else { w = Math.round(w * MAX / h); h = MAX; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        let [w, h] = [img.width, img.height];
+        if (w > MAX || h > MAX) w > h ? (h = Math.round(h * MAX / w), w = MAX) : (w = Math.round(w * MAX / h), h = MAX);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
       };
       img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
+const ls = (k, fb) => { try { return JSON.parse(localStorage?.getItem(k)) ?? fb; } catch { return fb; } };
+const ss = (k, v) => { try { localStorage?.setItem(k, JSON.stringify(v)); } catch {} };
+const fmt = n => n ? `$${Number(n).toLocaleString()}` : '$0';
+const adj = item => Math.round((item.estimatedValue?.best || 0) * (CONDITION_MULT[item.condition] || 1));
 
-function load(key, fallback) {
-  if (typeof window === 'undefined') return fallback;
-  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
-}
-function save(key, val) {
-  if (typeof window !== 'undefined') localStorage.setItem(key, JSON.stringify(val));
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-function SegmentedControl({ options, value, onChange }) {
+// ─── Components ───────────────────────────────────────────────────────────────
+function Sheet({ open, onClose, title, children }) {
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+  if (!open) return null;
   return (
-    <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
-      {options.map(opt => (
-        <button
-          key={opt}
-          onClick={() => onChange(opt)}
-          className={`flex-1 text-xs py-1 rounded-md font-medium transition-all ${
-            value === opt ? 'bg-white text-[#0284c7] shadow-sm' : 'text-slate-500'
-          }`}
-        >
-          {opt}
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100 }} onClick={onClose}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#fff', borderRadius: '20px 20px 0 0', padding: '12px 0 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)', animation: 'sheetIn 0.26s cubic-bezier(0.32,0.72,0,1) forwards' }}
+      >
+        <div style={{ width: 36, height: 4, background: '#E2E8F0', borderRadius: 9, margin: '0 auto 16px' }} />
+        {title && <p style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: '#0F172A', padding: '0 20px 12px' }}>{title}</p>}
+        <div style={{ padding: '0 20px' }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CopyBox({ label, text }) {
+  const [ok, setOk] = useState(false);
+  const copy = () => { navigator.clipboard.writeText(text); setOk(true); setTimeout(() => setOk(false), 1500); };
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+        <button onClick={copy} style={{ fontSize: 11, color: ok ? '#16A34A' : '#64748B', background: ok ? '#F0FDF4' : '#F8FAFC', border: `1px solid ${ok ? '#BBF7D0' : '#E2E8F0'}`, borderRadius: 6, padding: '2px 8px', cursor: 'pointer', fontWeight: 500 }}>
+          {ok ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: '#475569', fontFamily: 'ui-monospace, monospace', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function ConditionControl({ value, onChange }) {
+  return (
+    <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 10, padding: 3, gap: 2 }}>
+      {CONDITIONS.map(c => (
+        <button key={c} onClick={() => onChange(c)} style={{ flex: 1, fontSize: 10, fontWeight: 600, padding: '5px 2px', borderRadius: 7, border: 'none', cursor: 'pointer', transition: 'all 0.12s', background: value === c ? '#fff' : 'transparent', color: value === c ? '#0066FF' : '#94A3B8', boxShadow: value === c ? '0 1px 4px rgba(0,0,0,0.1)' : 'none' }}>
+          {c}
         </button>
       ))}
     </div>
   );
 }
 
-function CopyBox({ label, text }) {
-  const [copied, setCopied] = useState(false);
-  const copy = () => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">{label}</span>
-        <button
-          onClick={copy}
-          className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-md transition-colors ${
-            copied ? 'text-green-600 bg-green-50' : 'text-slate-400 hover:text-slate-700'
-          }`}
-        >
-          {copied ? (
-            <><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg> Copied</>
-          ) : (
-            <><CopyIcon /> Copy</>
-          )}
-        </button>
-      </div>
-      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-600 font-mono leading-relaxed whitespace-pre-line">{text}</div>
-    </div>
-  );
-}
-
 function ItemCard({ item, selected, onSelect, onRemove, onConditionChange, onAddPhotos, index }) {
-  const [expanded, setExpanded] = useState(false);
-  const adjPrice = Math.round((item.estimatedValue?.best || 0) * (CONDITION_MULT[item.condition] || 1));
+  const [open, setOpen] = useState(false);
+  const price = adj(item);
+  const rarity = RARITY_PILL[item.rarity];
 
   return (
     <div
-      className="card-enter bg-white rounded-2xl overflow-hidden border border-slate-200"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)', animationDelay: `${index * 60}ms` }}
+      style={{ background: '#fff', borderRadius: 16, overflow: 'hidden', border: selected ? '2px solid #0066FF' : '1px solid #E8EDF2', boxShadow: selected ? '0 0 0 3px rgba(0,102,255,0.08)' : '0 1px 4px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.04)', marginBottom: 12, animation: `slideUp 0.2s ease ${index * 55}ms forwards`, opacity: 0, transition: 'border 0.15s' }}
     >
       {/* Photo */}
-      <div className="relative" style={{ aspectRatio: '16/9' }}>
-        <img src={item.preview} alt={item.name} className="w-full h-full object-cover" />
-        {/* Select checkbox */}
-        <button
-          onClick={() => onSelect(item.id)}
-          className={`absolute top-2.5 right-2.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-            selected ? 'bg-[#0284c7] border-[#0284c7]' : 'bg-white/80 border-slate-300'
-          }`}
-        >
-          {selected && <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>}
+      <div style={{ position: 'relative', aspectRatio: '4/3', background: '#F1F5F9' }}>
+        <img src={item.preview} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.45) 100%)' }} />
+        {/* Select */}
+        <button onClick={() => onSelect(item.id)} style={{ position: 'absolute', top: 10, right: 10, width: 26, height: 26, borderRadius: '50%', border: selected ? '2px solid #0066FF' : '2px solid rgba(255,255,255,0.8)', background: selected ? '#0066FF' : 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.15)' }}>
+          {selected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
         </button>
-        {/* Rarity badge */}
-        {item.rarity && item.rarity !== 'Common' && (
-          <span className={`absolute top-2.5 left-2.5 text-xs px-2 py-0.5 rounded-full font-medium ${RARITY_STYLE[item.rarity] || ''}`}>
+        {/* Rarity */}
+        {rarity && (
+          <span style={{ position: 'absolute', top: 10, left: 10, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20, background: rarity.bg, color: rarity.text, border: `1px solid ${rarity.border}` }}>
             {item.rarity}
           </span>
         )}
+        {/* Price overlay on photo */}
+        <div style={{ position: 'absolute', bottom: 10, right: 10 }}>
+          <span style={{ fontFamily: 'Georgia,serif', fontSize: 22, fontWeight: 700, color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }}>{fmt(price)}</span>
+        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div style={{ padding: '14px 14px 10px' }}>
         {item.error ? (
-          <p className="text-red-500 text-sm">{item.error}</p>
+          <p style={{ fontSize: 13, color: '#EF4444' }}>{item.error}</p>
         ) : (
           <>
-            {/* Category + Name + Price */}
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mb-0.5">{item.category}</p>
-                <p className="font-semibold text-slate-800 text-sm leading-snug">{item.name}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-serif text-lg font-bold text-[#0284c7]">${adjPrice}</p>
-                <p className="text-xs text-slate-400">${item.estimatedValue?.low}–${item.estimatedValue?.high}</p>
+            <p style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{item.category}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#0F172A', lineHeight: 1.3, flex: 1, paddingRight: 8 }}>{item.name}</p>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <p style={{ fontSize: 11, color: '#CBD5E1' }}>{fmt(item.estimatedValue?.low)}–{fmt(item.estimatedValue?.high)}</p>
               </div>
             </div>
 
-            {/* Condition */}
-            <SegmentedControl options={CONDITIONS} value={item.condition} onChange={c => onConditionChange(item.id, c)} />
+            <ConditionControl value={item.condition} onChange={c => onConditionChange(item.id, c)} />
 
-            {/* Name override */}
-            <input
-              type="text"
-              defaultValue={item.name}
-              onBlur={e => {/* handled via item.name update */}}
-              placeholder="Correct item name if needed..."
-              className="mt-2 w-full text-xs border border-slate-200 rounded-lg px-3 py-2 text-slate-600 focus:outline-none focus:border-[#0284c7] transition"
-            />
-
-            {/* Details accordion */}
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="mt-3 text-xs text-[#0284c7] font-medium flex items-center gap-1"
-            >
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" className={`transition-transform ${expanded ? 'rotate-90' : ''}`}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-              {expanded ? 'Hide details' : 'Show details'}
+            {/* Details toggle */}
+            <button onClick={() => setOpen(!open)} style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500, color: '#0066FF', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0066FF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.15s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}><path d="M9 18l6-6-6-6"/></svg>
+              {open ? 'Hide details' : 'View details'}
             </button>
 
-            {expanded && (
-              <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
-                {item.description && <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>}
-                {(item.condition_notes || item.rarityNote || item.rarity_notes) && (
-                  <div className="mt-2">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Condition / Rarity Notes</p>
-                    {item.condition_notes && <p className="text-xs text-slate-600 mb-1">{item.condition_notes}</p>}
-                    {(item.rarity_notes || item.rarityNote) && <p className="text-xs text-slate-600">{item.rarity_notes || item.rarityNote}</p>}
+            {open && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
+                {item.description && <p style={{ fontSize: 12, color: '#64748B', lineHeight: 1.6, marginBottom: 10 }}>{item.description}</p>}
+                {(item.condition_notes && item.condition_notes !== 'No visible damage from this photo angle.') && (
+                  <div style={{ background: '#FFF7ED', border: '1px solid #FED7AA', borderRadius: 8, padding: '8px 10px', marginBottom: 8 }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#9A3412', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Condition Notes</p>
+                    <p style={{ fontSize: 12, color: '#7C2D12' }}>{item.condition_notes}</p>
+                  </div>
+                )}
+                {(item.rarity_notes || item.rarityNote) && (
+                  <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 10px', marginBottom: 8 }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Authentication</p>
+                    <p style={{ fontSize: 12, color: '#475569' }}>{item.rarity_notes || item.rarityNote}</p>
                   </div>
                 )}
                 {item.recentSales && (
-                  <div className="mt-2">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Recent Sales</p>
-                    <p className="text-xs text-slate-600">{item.recentSales}</p>
+                  <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '8px 10px', marginBottom: 8 }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>Recent Sales</p>
+                    <p style={{ fontSize: 12, color: '#166534' }}>{item.recentSales}</p>
                   </div>
                 )}
                 {item.bestPlatform && (
-                  <p className="text-xs text-slate-500 mt-2">Best on <span className="text-[#0284c7] font-medium">{item.bestPlatform}</span> — {item.bestPlatformReason}</p>
+                  <p style={{ fontSize: 12, color: '#64748B', marginBottom: 10 }}>
+                    Best on <span style={{ fontWeight: 600, color: '#0066FF' }}>{item.bestPlatform}</span> — {item.bestPlatformReason}
+                  </p>
                 )}
                 {item.ebayTitle && <CopyBox label="eBay Title" text={item.ebayTitle} />}
                 {item.listingDescription && <CopyBox label="Listing Description" text={item.listingDescription} />}
+
+                {/* Add photos */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 12, color: '#94A3B8', cursor: 'pointer' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                  Add more photos for better accuracy
+                  <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={e => { onAddPhotos(item.id, e.target.files); e.target.value = ''; }} />
+                </label>
               </div>
             )}
-
-            {/* Add photos */}
-            <label className="mt-3 flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#0284c7] cursor-pointer transition-colors">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-              Add photos
-              <input type="file" multiple accept="image/*" className="hidden" onChange={e => { onAddPhotos(item.id, e.target.files); e.target.value = ''; }} />
-            </label>
           </>
         )}
 
-        {/* Remove */}
-        <button
-          onClick={() => onRemove(item.id)}
-          className="mt-3 w-full text-center text-sm text-slate-400 hover:text-red-500 py-2 rounded-xl hover:bg-red-50 transition-colors"
-        >
-          Remove
-        </button>
+        <button onClick={() => onRemove(item.id)} style={{ width: '100%', marginTop: 10, padding: '8px 0', fontSize: 12, fontWeight: 500, color: '#CBD5E1', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.02em' }}
+          onMouseOver={e => e.currentTarget.style.color = '#EF4444'}
+          onMouseOut={e => e.currentTarget.style.color = '#CBD5E1'}
+        >Remove</button>
       </div>
     </div>
   );
 }
 
-function BottomSheet({ open, onClose, title, children }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="sheet-open absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl pt-3 pb-safe"
-        style={{ boxShadow: '0 -4px 32px rgba(0,0,0,0.12)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4" />
-        {title && <p className="text-base font-semibold text-slate-800 px-6 mb-4">{title}</p>}
-        <div className="px-6 pb-8">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main App ─────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function EstateApp() {
-  const [tab, setTab] = useState('home');
-  const [items, setItems] = useState(() => load('estate_items', []));
-  const [rooms, setRooms] = useState(() => load('estate_rooms', ['Living Room', 'Kitchen', 'Bedroom', 'Attic', 'Garage']));
-  const [activeRoom, setActiveRoom] = useState(() => load('estate_active_room', 'Living Room'));
-  const [apiKey, setApiKey] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('estate_api_key') || '' : '');
-  const [analyzing, setAnalyzing] = useState(false);
+  const [tab, setTab]         = useState('home');
+  const [items, setItems]     = useState(() => ls('estate_items', []));
+  const [rooms, setRooms]     = useState(() => ls('estate_rooms', ['Living Room', 'Kitchen', 'Bedroom', 'Attic', 'Garage']));
+  const [room, setRoom]       = useState(() => ls('estate_room', 'Living Room'));
+  const [apiKey, setApiKey]   = useState(() => typeof window !== 'undefined' ? localStorage.getItem('estate_api_key') || '' : '');
+  const [busy, setBusy]       = useState(false);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
   const [selected, setSelected] = useState([]);
-  const [bundle, setBundle] = useState(null);
+  const [bundle, setBundle]   = useState(null);
   const [bundling, setBundling] = useState(false);
-  const [sheet, setSheet] = useState(null); // 'account' | 'rooms' | 'bundle'
+  const [sheet, setSheet]     = useState(null);
   const [newRoom, setNewRoom] = useState('');
   const fileRef = useRef();
 
-  useEffect(() => { save('estate_items', items); }, [items]);
-  useEffect(() => { save('estate_rooms', rooms); }, [rooms]);
-  useEffect(() => { save('estate_active_room', activeRoom); }, [activeRoom]);
+  useEffect(() => ss('estate_items', items), [items]);
+  useEffect(() => ss('estate_rooms', rooms), [rooms]);
+  useEffect(() => ss('estate_room', room), [room]);
 
-  const roomItems = items.filter(i => i.room === activeRoom);
-  const selectedItems = items.filter(i => selected.includes(i.id));
-  const totalValue = roomItems.reduce((s, i) => s + Math.round((i.estimatedValue?.best || 0) * (CONDITION_MULT[i.condition] || 1)), 0);
+  const roomItems = items.filter(i => i.room === room);
+  const total = roomItems.reduce((s, i) => s + adj(i), 0);
+  const selItems = items.filter(i => selected.includes(i.id));
 
-  const processFiles = useCallback(async (files) => {
+  const processFiles = useCallback(async files => {
     if (!files?.length) return;
     const key = apiKey || localStorage.getItem('estate_api_key');
-    if (!key) { setError('Add your Claude API key in Account first.'); setSheet('account'); return; }
-    setAnalyzing(true);
-    setProgress(0);
-    setError(null);
-    setTab('home');
+    if (!key) { setSheet('account'); return; }
+    setBusy(true); setProgress(5); setError(null); setTab('home');
     const arr = Array.from(files);
-    const results = [];
+    const out = [];
     for (let i = 0; i < arr.length; i++) {
-      setProgress(Math.round(((i) / arr.length) * 90));
+      setProgress(Math.round(5 + (i / arr.length) * 85));
       try {
-        const base64 = await resizeImage(arr[i]);
-        const res = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64, mediaType: 'image/jpeg', apiKey: key }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        if (data.blocked) throw new Error(`Blocked: ${data.reason}`);
-        results.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), condition: data.condition || 'Good', room: activeRoom, ...data });
-      } catch (err) {
-        results.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), name: 'Failed', error: err.message, estimatedValue: { low:0, high:0, best:0 }, condition: 'Good', room: activeRoom });
+        const b64 = await resizeImage(arr[i]);
+        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', apiKey: key }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error);
+        if (d.blocked) throw new Error(`Blocked: ${d.reason}`);
+        out.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), condition: d.condition || 'Good', room, ...d });
+      } catch (e) {
+        out.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), name: 'Analysis failed', error: e.message, estimatedValue: { low:0,high:0,best:0 }, condition: 'Good', room });
       }
     }
     setProgress(100);
-    setTimeout(() => { setProgress(0); setAnalyzing(false); }, 400);
-    setItems(prev => [...prev, ...results]);
-  }, [apiKey, activeRoom]);
+    setTimeout(() => { setProgress(0); setBusy(false); }, 500);
+    setItems(p => [...p, ...out]);
+  }, [apiKey, room]);
 
   const makeBundle = async () => {
-    if (selectedItems.length < 2) return;
+    if (selItems.length < 2) return;
     setBundling(true);
     const key = apiKey || localStorage.getItem('estate_api_key');
-    const summary = selectedItems.map(i => `${i.name} (${i.condition}, $${Math.round((i.estimatedValue?.best||0)*(CONDITION_MULT[i.condition]||1))})`).join(', ');
+    const summary = selItems.map(i => `${i.name} (${i.condition}, ${fmt(adj(i))})`).join(', ');
     try {
-      const res = await fetch('/api/bundle', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: summary, apiKey: key }),
-      });
-      const data = await res.json();
-      setBundle(data);
-      setSheet('bundle');
-    } catch (err) { setError(err.message); }
+      const r = await fetch('/api/bundle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: summary, apiKey: key }) });
+      const d = await r.json();
+      setBundle(d); setSheet('bundle');
+    } catch(e) { setError(e.message); }
     setBundling(false);
   };
 
   const exportCSV = () => {
-    const headers = ['Name','Category','Condition','Rarity','Low','Best','High','Adjusted','Platform','eBay Title','Room'];
-    const rows = items.map(i => [i.name,i.category,i.condition,i.rarity,i.estimatedValue?.low,i.estimatedValue?.best,i.estimatedValue?.high,Math.round((i.estimatedValue?.best||0)*(CONDITION_MULT[i.condition]||1)),i.bestPlatform,i.ebayTitle,i.room]);
-    const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    const h = ['Name','Category','Condition','Rarity','Low','Best','High','Adjusted','Platform','eBay Title','Room'];
+    const rows = items.map(i => [i.name,i.category,i.condition,i.rarity,i.estimatedValue?.low,i.estimatedValue?.best,i.estimatedValue?.high,adj(i),i.bestPlatform,i.ebayTitle,i.room]);
+    const csv = [h,...rows].map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='estate.csv'; a.click();
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] font-sans select-none" style={{ fontFamily: "'DM Sans', Inter, system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#F7F8FA', fontFamily: "'DM Sans', Inter, system-ui, sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes sheetIn { from { transform:translateY(100%); } to { transform:translateY(0); } }
+        @keyframes pulse { 0%,100%{box-shadow:0 4px 16px rgba(0,102,255,0.35),0 0 0 0 rgba(0,102,255,0.2);} 50%{box-shadow:0 4px 16px rgba(0,102,255,0.35),0 0 0 10px rgba(0,102,255,0);} }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        button { transition: transform 0.1s; }
+        button:active { transform: scale(0.96); }
+        ::-webkit-scrollbar { display: none; }
+      `}</style>
 
-      {/* Progress bar */}
-      {analyzing && progress > 0 && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-slate-200">
-          <div className="h-full bg-[#0284c7] transition-all duration-300" style={{ width: `${progress}%` }} />
+      {/* Top progress bar */}
+      {busy && progress > 0 && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, background: '#E2E8F0', zIndex: 200 }}>
+          <div style={{ height: '100%', background: '#0066FF', width: `${progress}%`, transition: 'width 0.3s ease' }} />
         </div>
       )}
 
-      {/* Top nav */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="font-serif text-xl font-bold text-slate-800 tracking-tight">
-            est<span className="text-[#0284c7]">🏠</span>te
-          </span>
-          <div className="flex items-center gap-3">
+      {/* Header */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(247,248,250,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E8EDF2', padding: '0 16px' }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Logo />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {roomItems.length > 0 && (
-              <span className="font-serif text-lg font-bold text-[#0284c7]">${totalValue.toLocaleString()}</span>
+              <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: '#0066FF' }}>{fmt(total)}</span>
             )}
-            <button onClick={() => setTab('account')} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition">
-              <AccountIcon active={tab === 'account'} />
+            <button onClick={() => setTab(tab === 'account' ? 'home' : 'account')} style={{ width: 32, height: 32, borderRadius: '50%', background: tab === 'account' ? '#EEF4FF' : '#F1F5F9', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={tab === 'account' ? '#0066FF' : '#64748B'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
             </button>
           </div>
         </div>
       </header>
 
       {/* Room pills */}
-      <div className="sticky top-14 z-30 bg-white border-b border-slate-100 px-4 py-2">
-        <div className="max-w-lg mx-auto flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
+      <div style={{ background: 'rgba(247,248,250,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #E8EDF2', padding: '8px 16px', overflowX: 'auto', display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, maxWidth: 480, margin: '0 auto', width: '100%' }}>
           {rooms.map(r => (
-            <button
-              key={r}
-              onClick={() => setActiveRoom(r)}
-              className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-                activeRoom === r ? 'bg-[#0284c7] text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-              }`}
-            >{r}</button>
+            <button key={r} onClick={() => setRoom(r)} style={{ flexShrink: 0, fontSize: 12, fontWeight: 500, padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', background: room === r ? '#0066FF' : '#EAECEF', color: room === r ? '#fff' : '#64748B', transition: 'all 0.12s' }}>
+              {r}
+            </button>
           ))}
-          <button
-            onClick={() => setSheet('rooms')}
-            className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-400 hover:bg-slate-200 transition-colors"
-          >+ Add</button>
+          <button onClick={() => setSheet('rooms')} style={{ flexShrink: 0, fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, border: '1px dashed #CBD5E1', background: 'transparent', color: '#94A3B8', cursor: 'pointer' }}>+ Room</button>
         </div>
       </div>
 
-      {/* Totals / selection bar */}
+      {/* Selection / totals bar */}
       {(roomItems.length > 0 || selected.length > 0) && (
-        <div className="sticky top-[90px] z-20 bg-white border-b border-slate-100 px-4 py-2.5">
-          <div className="max-w-lg mx-auto flex items-center justify-between">
+        <div style={{ background: '#fff', borderBottom: '1px solid #F1F5F9', padding: '10px 16px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8 }}>
             {selected.length > 0 ? (
               <>
-                <span className="text-sm text-slate-600">{selected.length} selected</span>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setSelected([])} className="text-xs text-slate-400 hover:text-slate-600">Clear</button>
-                  <button
-                    onClick={makeBundle}
-                    disabled={bundling || selected.length < 2}
-                    className="text-xs bg-[#0284c7] text-white px-3 py-1.5 rounded-lg font-medium disabled:opacity-50 transition"
-                  >{bundling ? 'Bundling…' : `Bundle ${selected.length}`}</button>
-                </div>
+                <span style={{ fontSize: 13, color: '#64748B', flex: 1 }}>{selected.length} selected</span>
+                <button onClick={() => setSelected([])} style={{ fontSize: 12, color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+                <button onClick={makeBundle} disabled={bundling || selected.length < 2} style={{ fontSize: 12, fontWeight: 600, color: '#fff', background: '#0066FF', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', opacity: selected.length < 2 ? 0.5 : 1 }}>
+                  {bundling ? 'Bundling…' : `Bundle ${selected.length}`}
+                </button>
               </>
             ) : (
               <>
-                <span className="text-sm text-slate-400">{roomItems.length} item{roomItems.length !== 1 ? 's' : ''}</span>
-                <div className="w-px h-4 bg-slate-200 mx-2" />
-                <span className="font-serif font-bold text-[#0284c7] text-lg">${totalValue.toLocaleString()}</span>
-                <div className="flex-1" />
-                <button onClick={exportCSV} className="text-xs text-slate-400 hover:text-slate-600 transition">Export CSV</button>
+                <span style={{ fontSize: 12, color: '#94A3B8' }}>{roomItems.length} item{roomItems.length !== 1 ? 's' : ''}</span>
+                <div style={{ flex: 1, height: 1, background: '#F1F5F9', margin: '0 8px' }} />
+                <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: '#0066FF' }}>{fmt(total)}</span>
+                <button onClick={exportCSV} style={{ fontSize: 11, color: '#94A3B8', background: 'none', border: '1px solid #E2E8F0', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', marginLeft: 8 }}>Export</button>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* Main content */}
-      <main className="max-w-lg mx-auto px-4 pt-4 pb-28">
-
-        {/* Error */}
+      {/* Main */}
+      <main style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 100px' }}>
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-4 flex justify-between items-center">
-            {error}
-            <button onClick={() => setError(null)} className="text-red-400 ml-2">✕</button>
-          </div>
-        )}
-
-        {/* Scan tab */}
-        {tab === 'scan' && (
-          <div
-            className="flex flex-col items-center justify-center min-h-[60vh] cursor-pointer"
-            onClick={() => fileRef.current?.click()}
-          >
-            <input ref={fileRef} type="file" multiple accept="image/*" className="hidden"
-              onChange={e => { processFiles(e.target.files); e.target.value = ''; }} />
-            <div className={`w-20 h-20 rounded-full bg-[#0284c7] flex items-center justify-center mb-6 ${roomItems.length === 0 ? 'pulse-fab' : ''}`}
-              style={{ boxShadow: '0 4px 14px rgba(2,132,199,0.4)' }}>
-              <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <p className="text-xl font-semibold text-slate-700 mb-1">Photograph items</p>
-            <p className="text-sm text-slate-400">Tap to take photos, or drag photos here</p>
-          </div>
-        )}
-
-        {/* Home tab */}
-        {tab === 'home' && (
-          <>
-            {roomItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                <EmptyHouse />
-                <p className="mt-5 text-base font-medium text-slate-600">Nothing here yet</p>
-                <p className="text-sm text-slate-400 mt-1 mb-6">Tap the blue button to photograph your first item</p>
-                <button
-                  onClick={() => setTab('scan')}
-                  className={`w-16 h-16 rounded-full bg-[#0284c7] flex items-center justify-center pulse-fab`}
-                  style={{ boxShadow: '0 4px 14px rgba(2,132,199,0.4)' }}
-                >
-                  <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.8">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {roomItems.map((item, i) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    index={i}
-                    selected={selected.includes(item.id)}
-                    onSelect={id => setSelected(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id])}
-                    onRemove={id => setItems(prev => prev.filter(i => i.id !== id))}
-                    onConditionChange={(id, c) => setItems(prev => prev.map(i => i.id === id ? {...i, condition: c} : i))}
-                    onAddPhotos={async (id, files) => {
-                      const key = apiKey || localStorage.getItem('estate_api_key');
-                      for (const file of Array.from(files)) {
-                        const base64 = await resizeImage(file);
-                        const res = await fetch('/api/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({image:base64,mediaType:'image/jpeg',apiKey:key}) });
-                        const data = await res.json();
-                        if (res.ok && !data.blocked) {
-                          setItems(prev => prev.map(i => i.id === id ? {...i, description: data.description||i.description, rarityNote: data.rarityNote||i.rarityNote, recentSales: data.recentSales||i.recentSales} : i));
-                        }
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Rooms tab */}
-        {tab === 'rooms' && (
-          <div className="space-y-2">
-            {rooms.map(r => (
-              <button
-                key={r}
-                onClick={() => { setActiveRoom(r); setTab('home'); }}
-                className="w-full flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-200 text-left"
-                style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-              >
-                <span className={`font-medium text-sm ${activeRoom === r ? 'text-[#0284c7]' : 'text-slate-700'}`}>{r}</span>
-                <span className="text-xs text-slate-400">{items.filter(i=>i.room===r).length} items</span>
-              </button>
-            ))}
-            <button onClick={() => setSheet('rooms')} className="w-full py-3 text-sm text-[#0284c7] font-medium">+ Add room</button>
+          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: '#DC2626', display: 'flex', justifyContent: 'space-between' }}>
+            {error} <button onClick={() => setError(null)} style={{ color: '#FCA5A5', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
           </div>
         )}
 
         {/* Account tab */}
         {tab === 'account' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-200 p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-2">Claude API Key</p>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={e => { setApiKey(e.target.value); localStorage.setItem('estate_api_key', e.target.value); }}
-                placeholder="sk-ant-..."
-                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 focus:outline-none focus:border-[#0284c7] font-mono transition"
-              />
-              <p className="text-xs text-slate-400 mt-2">Saved in your browser only. <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-[#0284c7]">Get a key →</a></p>
+          <div>
+            <p style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: '#0F172A', marginBottom: 16 }}>Account</p>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E8EDF2', padding: 16, marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Claude API Key</p>
+              <input type="password" value={apiKey} onChange={e => { setApiKey(e.target.value); localStorage.setItem('estate_api_key', e.target.value); }} placeholder="sk-ant-..."
+                style={{ width: '100%', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px 12px', fontSize: 13, fontFamily: 'ui-monospace,monospace', color: '#0F172A', outline: 'none', background: '#FAFAFA' }} />
+              <p style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>Stored in your browser only. <a href="https://console.anthropic.com" target="_blank" rel="noreferrer" style={{ color: '#0066FF' }}>Get a key →</a></p>
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200 p-5" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-              <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-3">Inventory</p>
-              <div className="flex gap-2">
-                <button onClick={exportCSV} className="flex-1 text-sm bg-slate-100 hover:bg-slate-200 text-slate-600 py-2.5 rounded-xl transition font-medium">Export CSV</button>
-                <button onClick={() => { if (confirm('Clear all items?')) setItems([]); }} className="flex-1 text-sm bg-red-50 hover:bg-red-100 text-red-500 py-2.5 rounded-xl transition font-medium">Clear all</button>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E8EDF2', padding: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Inventory</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={exportCSV} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 500, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, cursor: 'pointer' }}>Export CSV</button>
+                <button onClick={() => { if (confirm('Clear all items?')) setItems([]); }} style={{ flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 500, color: '#EF4444', background: '#FFF5F5', border: '1px solid #FECACA', borderRadius: 10, cursor: 'pointer' }}>Clear all</button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Rooms tab */}
+        {tab === 'rooms' && (
+          <div>
+            <p style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: '#0F172A', marginBottom: 16 }}>Rooms</p>
+            {rooms.map(r => (
+              <button key={r} onClick={() => { setRoom(r); setTab('home'); }} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: 12, border: `1px solid ${room === r ? '#BFDBFE' : '#E8EDF2'}`, padding: '12px 16px', marginBottom: 8, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: room === r ? '#0066FF' : '#334155' }}>{r}</span>
+                <span style={{ fontSize: 12, color: '#94A3B8' }}>{items.filter(i=>i.room===r).length}</span>
+              </button>
+            ))}
+            <button onClick={() => setSheet('rooms')} style={{ width: '100%', padding: '10px 0', fontSize: 13, color: '#0066FF', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>+ Add room</button>
+          </div>
+        )}
+
+        {/* Home tab */}
+        {tab === 'home' && (
+          roomItems.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '55vh', textAlign: 'center' }}>
+              <svg width="80" height="80" viewBox="0 0 96 96" fill="none" style={{ marginBottom: 16, opacity: 0.35 }}>
+                <path d="M12 44L48 12L84 44" stroke="#64748B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 36V80H76V36" stroke="#64748B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M36 80V56H60V80" stroke="#64748B" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="36" y="38" width="10" height="10" rx="1" stroke="#64748B" strokeWidth="2"/>
+                <rect x="50" y="38" width="10" height="10" rx="1" stroke="#64748B" strokeWidth="2"/>
+              </svg>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#334155', marginBottom: 6 }}>Nothing here yet</p>
+              <p style={{ fontSize: 13, color: '#94A3B8', marginBottom: 28 }}>Tap the button below to photograph your first item</p>
+              <button onClick={() => fileRef.current?.click()} style={{ width: 56, height: 56, borderRadius: '50%', background: '#0066FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pulse 2.2s ease-in-out infinite' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div>
+              {roomItems.map((item, i) => (
+                <ItemCard
+                  key={item.id} item={item} index={i}
+                  selected={selected.includes(item.id)}
+                  onSelect={id => setSelected(p => p.includes(id) ? p.filter(x=>x!==id) : [...p,id])}
+                  onRemove={id => { setItems(p=>p.filter(i=>i.id!==id)); setSelected(p=>p.filter(x=>x!==id)); }}
+                  onConditionChange={(id,c) => setItems(p=>p.map(i=>i.id===id?{...i,condition:c}:i))}
+                  onAddPhotos={async (id, files) => {
+                    const key = apiKey || localStorage.getItem('estate_api_key');
+                    for (const f of Array.from(files)) {
+                      const b64 = await resizeImage(f);
+                      const r = await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,mediaType:'image/jpeg',apiKey:key})});
+                      const d = await r.json();
+                      if (r.ok && !d.blocked) setItems(p=>p.map(i=>i.id===id?{...i,description:d.description||i.description,rarityNote:d.rarityNote||i.rarityNote,rarity_notes:d.rarity_notes||i.rarity_notes,recentSales:d.recentSales||i.recentSales}:i));
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )
+        )}
       </main>
 
-      {/* Bottom tab bar — Home | [FAB] | Rooms */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100" style={{ boxShadow: '0 -1px 3px rgba(0,0,0,0.06)' }}>
-        <div className="max-w-lg mx-auto flex items-center h-16 px-8">
+      {/* Bottom nav */}
+      <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid #E8EDF2' }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', height: 64, padding: '0 32px' }}>
           {/* Home */}
-          <button onClick={() => setTab('home')} className="flex flex-col items-center gap-0.5 flex-1 py-1">
-            <HomeIcon active={tab === 'home'} />
-            <span className={`text-[10px] font-medium ${tab === 'home' ? 'text-[#0284c7]' : 'text-slate-400'}`}>Home</span>
+          <button onClick={() => setTab('home')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={tab==='home'?'#0066FF':'#94A3B8'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span style={{ fontSize: 9, fontWeight: 600, color: tab==='home'?'#0066FF':'#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Home</span>
           </button>
-          {/* FAB — scan */}
-          <div className="flex-1 flex justify-center">
-            <button
-              onClick={() => { fileRef.current?.click(); }}
-              className={`-mt-5 w-14 h-14 rounded-full bg-[#0284c7] flex items-center justify-center active:scale-95 transition-transform ${items.length === 0 ? 'pulse-fab' : ''}`}
-              style={{ boxShadow: '0 4px 14px rgba(2,132,199,0.5)' }}
-            >
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.8">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+
+          {/* FAB */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <button onClick={() => fileRef.current?.click()} style={{ width: 52, height: 52, marginTop: -20, borderRadius: '50%', background: '#0066FF', border: '3px solid #F7F8FA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,102,255,0.4)', animation: items.length===0?'pulse 2.2s ease-in-out infinite':undefined }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
               </svg>
             </button>
           </div>
+
           {/* Rooms */}
-          <button onClick={() => setTab('rooms')} className="flex flex-col items-center gap-0.5 flex-1 py-1">
-            <RoomsIcon active={tab === 'rooms'} />
-            <span className={`text-[10px] font-medium ${tab === 'rooms' ? 'text-[#0284c7]' : 'text-slate-400'}`}>Rooms</span>
+          <button onClick={() => setTab('rooms')} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={tab==='rooms'?'#0066FF':'#94A3B8'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9h18M9 21V9m6 12V9M3 5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5z"/>
+            </svg>
+            <span style={{ fontSize: 9, fontWeight: 600, color: tab==='rooms'?'#0066FF':'#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rooms</span>
           </button>
         </div>
-      </div>
+      </nav>
 
-      {/* Bundle sheet */}
-      <BottomSheet open={sheet === 'bundle'} onClose={() => setSheet(null)} title="Bundle Pricing">
+      {/* Sheets */}
+      <Sheet open={sheet==='bundle'} onClose={() => setSheet(null)} title="Bundle Pricing">
         {bundle && (
-          <div className="space-y-4">
-            <div className="flex gap-6">
-              <div><p className="text-xs text-slate-400 mb-1">Individual</p><p className="font-serif text-xl font-bold text-slate-500">${bundle.individualTotal}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Bundle</p><p className="font-serif text-xl font-bold text-[#0284c7]">${bundle.bundlePrice}</p></div>
-              <div><p className="text-xs text-slate-400 mb-1">Saving</p><p className="font-serif text-xl font-bold text-green-600">{bundle.discountPercent}%</p></div>
+          <div>
+            <div style={{ display: 'flex', gap: 20, marginBottom: 14 }}>
+              {[['Individual', fmt(bundle.individualTotal), '#64748B'],['Bundle', fmt(bundle.bundlePrice), '#0066FF'],['Saving', `${bundle.discountPercent}%`, '#16A34A']].map(([l,v,c]) => (
+                <div key={l}>
+                  <p style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{l}</p>
+                  <p style={{ fontFamily: 'Georgia,serif', fontSize: 22, fontWeight: 700, color: c }}>{v}</p>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-slate-500">{bundle.rationale}</p>
+            <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5, marginBottom: 10 }}>{bundle.rationale}</p>
             <CopyBox label="Bundle Listing" text={bundle.description} />
           </div>
         )}
-      </BottomSheet>
+      </Sheet>
 
-      {/* Rooms sheet */}
-      <BottomSheet open={sheet === 'rooms'} onClose={() => setSheet(null)} title="Add Room">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newRoom}
-            onChange={e => setNewRoom(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && newRoom.trim()) { setRooms(prev => [...prev, newRoom.trim()]); setNewRoom(''); setSheet(null); }}}
-            placeholder="Room name..."
-            className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#0284c7]"
-            autoFocus
-          />
-          <button
-            onClick={() => { if (newRoom.trim()) { setRooms(prev => [...prev, newRoom.trim()]); setNewRoom(''); setSheet(null); }}}
-            className="bg-[#0284c7] text-white px-4 py-2.5 rounded-xl text-sm font-medium"
-          >Add</button>
+      <Sheet open={sheet==='rooms'} onClose={() => setSheet(null)} title="Add Room">
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={newRoom} onChange={e=>setNewRoom(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&newRoom.trim()){setRooms(p=>[...p,newRoom.trim()]);setNewRoom('');setSheet(null);}}} placeholder="Room name..." autoFocus
+            style={{ flex: 1, border: '1px solid #E2E8F0', borderRadius: 10, padding: '11px 14px', fontSize: 14, outline: 'none' }} />
+          <button onClick={()=>{if(newRoom.trim()){setRooms(p=>[...p,newRoom.trim()]);setNewRoom('');setSheet(null);}}} style={{ background:'#0066FF',color:'#fff',border:'none',borderRadius:10,padding:'11px 18px',fontSize:14,fontWeight:600,cursor:'pointer' }}>Add</button>
         </div>
-      </BottomSheet>
+      </Sheet>
 
-      {/* Account sheet */}
-      <BottomSheet open={sheet === 'account'} onClose={() => setSheet(null)} title="API Key Required">
-        <p className="text-sm text-slate-500 mb-4">Enter your Claude API key to analyze photos.</p>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={e => { setApiKey(e.target.value); localStorage.setItem('estate_api_key', e.target.value); }}
-          placeholder="sk-ant-..."
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-[#0284c7] mb-3"
-          autoFocus
-        />
-        <button onClick={() => setSheet(null)} className="w-full bg-[#0284c7] text-white py-3 rounded-xl text-sm font-semibold">Save & continue</button>
-      </BottomSheet>
+      <Sheet open={sheet==='account'} onClose={() => setSheet(null)} title="API Key Required">
+        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 12 }}>Enter your Claude API key to analyze photos.</p>
+        <input type="password" value={apiKey} onChange={e=>{setApiKey(e.target.value);localStorage.setItem('estate_api_key',e.target.value);}} placeholder="sk-ant-..." autoFocus
+          style={{ width:'100%',border:'1px solid #E2E8F0',borderRadius:10,padding:'12px 14px',fontSize:13,fontFamily:'ui-monospace,monospace',outline:'none',marginBottom:10 }} />
+        <button onClick={()=>setSheet(null)} style={{ width:'100%',background:'#0066FF',color:'#fff',border:'none',borderRadius:10,padding:'12px 0',fontSize:14,fontWeight:600,cursor:'pointer' }}>Save & continue</button>
+      </Sheet>
 
-      {/* Hidden file input for bottom FAB */}
-      <input ref={fileRef} type="file" multiple accept="image/*" className="hidden"
-        onChange={e => { processFiles(e.target.files); e.target.value = ''; }} />
+      <input ref={fileRef} type="file" multiple accept="image/*" style={{ display:'none' }} onChange={e=>{processFiles(e.target.files);e.target.value='';}} />
     </div>
   );
 }
