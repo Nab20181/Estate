@@ -329,7 +329,7 @@ export default function EstateApp() {
                       </div>
 
                       {/* Condition selector */}
-                      <div className="flex gap-1 mb-3 flex-wrap">
+                      <div className="flex gap-1 mb-2 flex-wrap">
                         {Object.keys(CONDITION_MULTIPLIER).map(c => (
                           <button
                             key={c}
@@ -344,6 +344,15 @@ export default function EstateApp() {
                           </button>
                         ))}
                       </div>
+
+                      {/* Name override */}
+                      <input
+                        type="text"
+                        defaultValue={item.name}
+                        onBlur={e => setItems(prev => prev.map(i => i.id === item.id ? { ...i, name: e.target.value } : i))}
+                        className="w-full bg-[#0d1420] border border-[#1e2a3a] rounded-lg px-3 py-1.5 text-slate-200 text-xs focus:outline-none focus:border-blue-500/60 transition mb-2"
+                        placeholder="Correct the item name if wrong..."
+                      />
 
                       {/* Expandable details */}
                       <details className="group">
