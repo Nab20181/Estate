@@ -41,6 +41,15 @@ export default function Landing() {
           ))}
         </div>
       </div>
+      <footer className="border-t border-[#1e2a3a] px-6 py-6">
+        <div className="max-w-4xl mx-auto flex flex-wrap gap-4 justify-center text-xs text-slate-600">
+          <Link href="/faq" className="hover:text-slate-300 transition">FAQ</Link>
+          <Link href="/pricing" className="hover:text-slate-300 transition">Pricing</Link>
+          <Link href="/privacy" className="hover:text-slate-300 transition">Privacy</Link>
+          <Link href="/tos" className="hover:text-slate-300 transition">Terms</Link>
+          <Link href="/contact" className="hover:text-slate-300 transition">Contact</Link>
+        </div>
+      </footer>
     </div>
   );
 }
