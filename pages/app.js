@@ -11,10 +11,9 @@ const RARITY_STYLE = {
   'Extremely Rare':'bg-amber-50 text-amber-700',
 };
 const TABS = [
-  { id: 'home',    label: 'Home',  icon: HomeIcon },
-  { id: 'scan',    label: 'Scan',  icon: null },
-  { id: 'rooms',   label: 'Rooms', icon: RoomsIcon },
-  { id: 'account', label: 'Account', icon: AccountIcon },
+  { id: 'home',  label: 'Home',  icon: HomeIcon },
+  { id: 'scan',  label: 'Scan',  icon: null },
+  { id: 'rooms', label: 'Rooms', icon: RoomsIcon },
 ];
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
@@ -365,9 +364,14 @@ export default function EstateApp() {
           <span className="font-serif text-xl font-bold text-slate-800 tracking-tight">
             est<span className="text-[#0284c7]">🏠</span>te
           </span>
-          {roomItems.length > 0 && (
-            <span className="font-serif text-lg font-bold text-[#0284c7]">${totalValue.toLocaleString()}</span>
-          )}
+          <div className="flex items-center gap-3">
+            {roomItems.length > 0 && (
+              <span className="font-serif text-lg font-bold text-[#0284c7]">${totalValue.toLocaleString()}</span>
+            )}
+            <button onClick={() => setTab('account')} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition">
+              <AccountIcon active={tab === 'account'} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -541,33 +545,32 @@ export default function EstateApp() {
         )}
       </main>
 
-      {/* Bottom tab bar */}
+      {/* Bottom tab bar — Home | [FAB] | Rooms */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-100" style={{ boxShadow: '0 -1px 3px rgba(0,0,0,0.06)' }}>
-        <div className="max-w-lg mx-auto flex items-center justify-around h-16 px-4">
-          {TABS.map(t => (
-            t.id === 'scan' ? (
-              <button
-                key="scan"
-                onClick={() => { setTab('scan'); fileRef.current?.click(); }}
-                className={`-mt-5 w-14 h-14 rounded-full bg-[#0284c7] flex items-center justify-center shadow-lg transition-transform active:scale-95 ${items.length === 0 ? 'pulse-fab' : ''}`}
-                style={{ boxShadow: '0 4px 14px rgba(2,132,199,0.5)' }}
-              >
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-              </button>
-            ) : (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className="flex flex-col items-center gap-0.5 w-16 py-1"
-              >
-                <t.icon active={tab === t.id} />
-                <span className={`text-[10px] font-medium ${tab === t.id ? 'text-[#0284c7]' : 'text-slate-400'}`}>{t.label}</span>
-              </button>
-            )
-          ))}
+        <div className="max-w-lg mx-auto flex items-center h-16 px-8">
+          {/* Home */}
+          <button onClick={() => setTab('home')} className="flex flex-col items-center gap-0.5 flex-1 py-1">
+            <HomeIcon active={tab === 'home'} />
+            <span className={`text-[10px] font-medium ${tab === 'home' ? 'text-[#0284c7]' : 'text-slate-400'}`}>Home</span>
+          </button>
+          {/* FAB — scan */}
+          <div className="flex-1 flex justify-center">
+            <button
+              onClick={() => { fileRef.current?.click(); }}
+              className={`-mt-5 w-14 h-14 rounded-full bg-[#0284c7] flex items-center justify-center active:scale-95 transition-transform ${items.length === 0 ? 'pulse-fab' : ''}`}
+              style={{ boxShadow: '0 4px 14px rgba(2,132,199,0.5)' }}
+            >
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="1.8">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </button>
+          </div>
+          {/* Rooms */}
+          <button onClick={() => setTab('rooms')} className="flex flex-col items-center gap-0.5 flex-1 py-1">
+            <RoomsIcon active={tab === 'rooms'} />
+            <span className={`text-[10px] font-medium ${tab === 'rooms' ? 'text-[#0284c7]' : 'text-slate-400'}`}>Rooms</span>
+          </button>
         </div>
       </div>
 

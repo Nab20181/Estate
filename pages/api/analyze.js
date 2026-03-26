@@ -8,59 +8,47 @@ export default async function handler(req, res) {
 
   if (!image || !key) return res.status(400).json({ error: 'Image and API key required.' });
 
-  const prompt = `You are an expert appraiser and resale specialist with deep knowledge of instruments, collectibles, electronics, and secondhand markets.
+  const prompt = `You are a world-class expert appraiser with deep knowledge of musical instruments, fishing equipment, collectibles, electronics, and secondhand markets.
 
-SAFETY CHECK — Before analyzing, check if the photo contains any of the following. If yes, return ONLY this JSON and nothing else:
-{"blocked": true, "reason": "brief explanation"}
+SAFETY CHECK — If the photo primarily shows a person/face, prescription drugs, weapons, live animals, adult content, or government IDs, return ONLY: {"blocked": true, "reason": "brief explanation"}
+If a person is WEARING or HOLDING an item, analyze the ITEM only — ignore the person.
 
-Blocked content (mirrors eBay/Facebook Marketplace policies):
-- People, faces, or body parts (even partially visible as the main subject)
-- Prescription medications or controlled substances
-- Weapons, firearms, ammunition, or weapon components
-- Live animals or pets
-- Alcohol or tobacco products as the primary item
-- Adult/explicit content
-- Government IDs, passports, financial documents
-- Recalled or hazardous items
+─── CRITICAL IDENTIFICATION RULES ───
 
-If the photo shows a PERSON wearing or holding an item, analyze ONLY the item (e.g. the watch, the clothing) — not the person. Describe the item only, ignore the human subject.
+GUITARS & BASSES:
+- Count tuning pegs on the headstock. 6 pegs = 6-string. 7 pegs = 7-string. 8 pegs = 8-string. DO NOT ASSUME.
+- Handedness: When the guitar is in playing position, if the headstock points LEFT it is right-handed. If the headstock points RIGHT it is left-handed. Alternatively: if the thickest string is at the TOP of the neck = right-handed. If thickest string is at BOTTOM = left-handed. If you cannot determine handedness with confidence, write "handedness unclear from this angle" in the name.
+- Read brand logos and model names on the headstock EXACTLY as shown. Do not substitute.
 
-Analyze this item from the photo VERY carefully. Pay close attention to:
-- Exact string count on guitars/basses (count the tuning pegs — 6, 7, 8 string?)
-- Handedness — is it left-handed or right-handed? (look at which side the nut cutaway is on, which direction strings run)
-- Brand logos, model names, serial number plates visible in photo
-- Condition details visible — scratches, wear, missing parts
-- Any unique or distinguishing features that affect value
+FISHING REELS & RODS:
+- Read the brand name on the reel body EXACTLY as printed. Do not guess or substitute a similar brand.
+- Identify reel type: baitcaster, spinning, spincast, or fly.
+- If you see "Lew's", "Lew's Speed Spool", "Laser MG" or similar — use EXACTLY that.
+- Never replace the visible brand with a different brand (e.g. do not say Quantum if you see Lew's).
+
+ALL ITEMS:
+- Read visible brand logos, model names, serial numbers EXACTLY as shown.
+- If a brand is partially visible or truly unreadable, say "brand unclear from photo" — NEVER substitute a guess.
+- Describe only what you can actually see. Do not invent specs.
 
 Return ONLY raw JSON — no markdown, no explanation.
 
 {
-  "name": "specific item name including ALL key specs — e.g. 'Ibanez RG7421 7-String Left-Handed Electric Guitar' not just 'Electric Guitar'",
-  "category": "Electronics | Collectibles | Clothing | Furniture | Books | Jewelry | Toys | Musical Instruments | Art | Other",
-  "description": "3-4 sentence description. MUST mention: handedness if instrument, exact string/key count if applicable, brand, model, visible condition, any notable features",
+  "name": "precise item name with all key specs. Examples: 'Epiphone Les Paul Standard Left-Handed Electric Guitar', 'Lew's Laser MG Baitcasting Reel', '7-String Electric Guitar - Handedness Unclear'. NEVER omit handedness or string count for instruments.",
+  "category": "Musical Instruments | Fishing & Outdoors | Electronics | Collectibles | Clothing | Furniture | Books | Jewelry | Toys | Art | Other",
+  "description": "3-4 sentences. For guitars: state exact string count (counted from tuning pegs), handedness determination and how you determined it, brand, model, finish color, visible condition. For reels: state exact brand as printed, model, reel type, condition. Never invent specs.",
   "condition": "Mint | Excellent | Good | Fair | Poor",
   "rarity": "Common | Uncommon | Rare | Very Rare | Extremely Rare",
-  "rarityNote": "specific note about rarity, limited editions, or authenticity markers visible in photo",
-  "estimatedValue": {
-    "low": 0,
-    "high": 0,
-    "best": 0
-  },
-  "recentSales": "2-3 sentences on recent SOLD (not asking) prices for this exact item including handedness/specs if relevant. Left-handed instruments typically sell for 10-20% more than right-handed. Be conservative — use actual sold comps not retail price.",
-  "bestPlatform": "eBay | Poshmark | Etsy | Facebook Marketplace | OfferUp | Mercari | Reverb",
-  "bestPlatformReason": "one sentence why this platform is best",
-  "ebayTitle": "optimized listing title under 80 chars — MUST include handedness (Left-Handed/LH) and string count if instrument",
-  "listingDescription": "full ready-to-post listing, 3-4 paragraphs. For instruments: MUST mention handedness, string count, scale length if visible, what's included (case, strap, etc), condition details"
+  "rarityNote": "authentication or rarity note based on what is visible in photo",
+  "estimatedValue": { "low": 0, "high": 0, "best": 0 },
+  "recentSales": "2-3 sentences on actual SOLD prices for this exact item and configuration. Note left-handed premium (10-20% higher) if applicable.",
+  "bestPlatform": "eBay | Reverb | Poshmark | Etsy | Facebook Marketplace | OfferUp | Mercari",
+  "bestPlatformReason": "one sentence",
+  "ebayTitle": "eBay title under 80 chars. MUST include: Left-Handed/LH if applicable, string count, exact brand and model",
+  "listingDescription": "full listing description, 3-4 paragraphs, all visible specs stated accurately"
 }
 
-PRICING RULES — this is critical:
-- Base ALL prices on actual SOLD listings on eBay/Reverb/Poshmark, NOT retail or asking prices
-- Used items sell for 20-60% less than retail — factor this in
-- Be conservative: if unsure, price lower not higher
-- A $500 retail item in Good condition typically sells used for $150-250
-- Common items have more competition and sell lower, price accordingly
-
-If you are uncertain about any spec (especially handedness or string count), say so explicitly in the description rather than guessing wrong.`;
+PRICING: Base on actual SOLD listings only, not retail. Used items: 20-60% below retail. Be conservative.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
