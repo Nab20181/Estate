@@ -408,11 +408,49 @@ export default function EstateApp() {
                     </>
                   )}
 
+                  {/* Add more photos */}
+                  <div className="mt-3 mb-2">
+                    <label className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#0d1420] hover:bg-[#111827] border border-[#1e2a3a] hover:border-blue-500/40 rounded-xl py-2 text-xs text-slate-400 hover:text-slate-200 transition">
+                      <span>📸</span> Add more photos of this item
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async e => {
+                          const files = Array.from(e.target.files);
+                          if (!files.length) return;
+                          const key = apiKey || localStorage.getItem('estate_api_key');
+                          for (const file of files) {
+                            const base64 = await resizeImage(file);
+                            const res = await fetch('/api/analyze', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ image: base64, mediaType: 'image/jpeg', apiKey: key }),
+                            });
+                            const data = await res.json();
+                            if (res.ok && !data.blocked) {
+                              // Merge additional photo analysis — update specs if more confident
+                              setItems(prev => prev.map(i => i.id === item.id ? {
+                                ...i,
+                                description: data.description || i.description,
+                                rarityNote: data.rarityNote || i.rarityNote,
+                                recentSales: data.recentSales || i.recentSales,
+                              } : i));
+                            }
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Remove button */}
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="mt-3 text-xs text-slate-600 hover:text-red-400 transition"
+                    className="w-full mt-1 py-2 text-sm text-slate-500 hover:text-red-400 hover:bg-red-400/5 border border-transparent hover:border-red-400/20 rounded-xl transition text-center"
                   >
-                    Remove
+                    Remove item
                   </button>
                 </div>
               </div>
