@@ -208,10 +208,11 @@ function ItemCard({ item, selected, onSelect, onRemove, onConditionChange, onAdd
             {expanded && (
               <div className="mt-3 space-y-1 border-t border-slate-100 pt-3">
                 {item.description && <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>}
-                {item.rarityNote && (
+                {(item.condition_notes || item.rarityNote || item.rarity_notes) && (
                   <div className="mt-2">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Rarity / Auth</p>
-                    <p className="text-xs text-slate-600">{item.rarityNote}</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Condition / Rarity Notes</p>
+                    {item.condition_notes && <p className="text-xs text-slate-600 mb-1">{item.condition_notes}</p>}
+                    {(item.rarity_notes || item.rarityNote) && <p className="text-xs text-slate-600">{item.rarity_notes || item.rarityNote}</p>}
                   </div>
                 )}
                 {item.recentSales && (
