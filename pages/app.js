@@ -220,6 +220,7 @@ export default function EstateApp() {
   const [busy, setBusy]       = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError]     = useState(null);
+  const [multiMode, setMultiMode] = useState(false);
   const [selected, setSelected] = useState([]);
   const [bundle, setBundle]   = useState(null);
   const [bundling, setBundling] = useState(false);
@@ -235,30 +236,47 @@ export default function EstateApp() {
   const total = roomItems.reduce((s, i) => s + adj(i), 0);
   const selItems = items.filter(i => selected.includes(i.id));
 
-  const processFiles = useCallback(async files => {
+  const processFiles = useCallback(async (files, forceMulti) => {
     if (!files?.length) return;
     const key = apiKey || localStorage.getItem('estate_api_key');
     if (!key) { setSheet('account'); return; }
     setBusy(true); setProgress(5); setError(null); setTab('home');
     const arr = Array.from(files);
     const out = [];
+    const useMulti = forceMulti !== undefined ? forceMulti : multiMode;
+
     for (let i = 0; i < arr.length; i++) {
       setProgress(Math.round(5 + (i / arr.length) * 85));
+      const previewUrl = URL.createObjectURL(arr[i]);
       try {
         const b64 = await resizeImage(arr[i]);
-        const r = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', apiKey: key }) });
+        const endpoint = useMulti ? '/api/detect' : '/api/analyze';
+        const r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', apiKey: key }) });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error);
-        if (d.blocked) throw new Error(`Blocked: ${d.reason}`);
-        out.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), condition: d.condition || 'Good', room, ...d });
+
+        if (useMulti) {
+          // Multi-item: d.items is an array
+          const detected = (d.items || [d]).map((item, j) => ({
+            id: Date.now() + i * 100 + j,
+            preview: previewUrl,
+            condition: item.condition || 'Good',
+            room,
+            ...item,
+          }));
+          out.push(...detected);
+        } else {
+          if (d.blocked) throw new Error(`Blocked: ${d.reason}`);
+          out.push({ id: Date.now() + i, preview: previewUrl, condition: d.condition || 'Good', room, ...d });
+        }
       } catch (e) {
-        out.push({ id: Date.now() + i, preview: URL.createObjectURL(arr[i]), name: 'Analysis failed', error: e.message, estimatedValue: { low:0,high:0,best:0 }, condition: 'Good', room });
+        out.push({ id: Date.now() + i, preview: previewUrl, name: 'Analysis failed', error: e.message, estimatedValue: { low:0,high:0,best:0 }, condition: 'Good', room });
       }
     }
     setProgress(100);
     setTimeout(() => { setProgress(0); setBusy(false); }, 500);
     setItems(p => [...p, ...out]);
-  }, [apiKey, room]);
+  }, [apiKey, room, multiMode]);
 
   const makeBundle = async () => {
     if (selItems.length < 2) return;
@@ -439,6 +457,18 @@ export default function EstateApp() {
           )
         )}
       </main>
+
+      {/* Multi-item mode toggle */}
+      <div style={{ position: 'fixed', bottom: 72, left: 0, right: 0, zIndex: 40, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+        <div style={{ pointerEvents: 'all', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', border: '1px solid #E8EDF2', borderRadius: 20, padding: '5px 6px', display: 'flex', gap: 2, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+          <button onClick={() => setMultiMode(false)} style={{ fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 14, border: 'none', cursor: 'pointer', background: !multiMode ? '#0066FF' : 'transparent', color: !multiMode ? '#fff' : '#94A3B8', transition: 'all 0.12s' }}>
+            Single item
+          </button>
+          <button onClick={() => setMultiMode(true)} style={{ fontSize: 11, fontWeight: 600, padding: '5px 14px', borderRadius: 14, border: 'none', cursor: 'pointer', background: multiMode ? '#0066FF' : 'transparent', color: multiMode ? '#fff' : '#94A3B8', transition: 'all 0.12s' }}>
+            Multi-item detect
+          </button>
+        </div>
+      </div>
 
       {/* Bottom nav */}
       <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)', borderTop: '1px solid #E8EDF2' }}>
