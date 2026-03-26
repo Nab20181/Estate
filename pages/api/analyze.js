@@ -10,6 +10,21 @@ export default async function handler(req, res) {
 
   const prompt = `You are an expert appraiser and resale specialist with deep knowledge of instruments, collectibles, electronics, and secondhand markets.
 
+SAFETY CHECK — Before analyzing, check if the photo contains any of the following. If yes, return ONLY this JSON and nothing else:
+{"blocked": true, "reason": "brief explanation"}
+
+Blocked content (mirrors eBay/Facebook Marketplace policies):
+- People, faces, or body parts (even partially visible as the main subject)
+- Prescription medications or controlled substances
+- Weapons, firearms, ammunition, or weapon components
+- Live animals or pets
+- Alcohol or tobacco products as the primary item
+- Adult/explicit content
+- Government IDs, passports, financial documents
+- Recalled or hazardous items
+
+If the photo shows a PERSON wearing or holding an item, analyze ONLY the item (e.g. the watch, the clothing) — not the person. Describe the item only, ignore the human subject.
+
 Analyze this item from the photo VERY carefully. Pay close attention to:
 - Exact string count on guitars/basses (count the tuning pegs — 6, 7, 8 string?)
 - Handedness — is it left-handed or right-handed? (look at which side the nut cutaway is on, which direction strings run)
@@ -31,12 +46,19 @@ Return ONLY raw JSON — no markdown, no explanation.
     "high": 0,
     "best": 0
   },
-  "recentSales": "2-3 sentences on recent SOLD (not asking) prices for this exact item including handedness/specs if relevant. Left-handed instruments typically sell for 10-20% more than right-handed.",
+  "recentSales": "2-3 sentences on recent SOLD (not asking) prices for this exact item including handedness/specs if relevant. Left-handed instruments typically sell for 10-20% more than right-handed. Be conservative — use actual sold comps not retail price.",
   "bestPlatform": "eBay | Poshmark | Etsy | Facebook Marketplace | OfferUp | Mercari | Reverb",
   "bestPlatformReason": "one sentence why this platform is best",
   "ebayTitle": "optimized listing title under 80 chars — MUST include handedness (Left-Handed/LH) and string count if instrument",
   "listingDescription": "full ready-to-post listing, 3-4 paragraphs. For instruments: MUST mention handedness, string count, scale length if visible, what's included (case, strap, etc), condition details"
 }
+
+PRICING RULES — this is critical:
+- Base ALL prices on actual SOLD listings on eBay/Reverb/Poshmark, NOT retail or asking prices
+- Used items sell for 20-60% less than retail — factor this in
+- Be conservative: if unsure, price lower not higher
+- A $500 retail item in Good condition typically sells used for $150-250
+- Common items have more competition and sell lower, price accordingly
 
 If you are uncertain about any spec (especially handedness or string count), say so explicitly in the description rather than guessing wrong.`;
 
@@ -78,6 +100,10 @@ If you are uncertain about any spec (especially handedness or string count), say
       result = JSON.parse(raw);
     } catch {
       return res.status(500).json({ error: 'Failed to parse response. Try again.' });
+    }
+
+    if (result.blocked) {
+      return res.status(422).json({ error: `This item can't be listed: ${result.reason}` });
     }
 
     return res.status(200).json(result);
