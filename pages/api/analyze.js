@@ -8,28 +8,37 @@ export default async function handler(req, res) {
 
   if (!image || !key) return res.status(400).json({ error: 'Image and API key required.' });
 
-  const prompt = `You are an expert appraiser and resale specialist. Analyze this item from the photo and return ONLY raw JSON — no markdown, no explanation.
+  const prompt = `You are an expert appraiser and resale specialist with deep knowledge of instruments, collectibles, electronics, and secondhand markets.
+
+Analyze this item from the photo VERY carefully. Pay close attention to:
+- Exact string count on guitars/basses (count the tuning pegs — 6, 7, 8 string?)
+- Handedness — is it left-handed or right-handed? (look at which side the nut cutaway is on, which direction strings run)
+- Brand logos, model names, serial number plates visible in photo
+- Condition details visible — scratches, wear, missing parts
+- Any unique or distinguishing features that affect value
+
+Return ONLY raw JSON — no markdown, no explanation.
 
 {
-  "name": "specific item name",
-  "category": "category (Electronics | Collectibles | Clothing | Furniture | Books | Jewelry | Toys | Art | Other)",
-  "description": "2-3 sentence description including key details, brand, model, condition notes from photo",
+  "name": "specific item name including ALL key specs — e.g. 'Ibanez RG7421 7-String Left-Handed Electric Guitar' not just 'Electric Guitar'",
+  "category": "Electronics | Collectibles | Clothing | Furniture | Books | Jewelry | Toys | Musical Instruments | Art | Other",
+  "description": "3-4 sentence description. MUST mention: handedness if instrument, exact string/key count if applicable, brand, model, visible condition, any notable features",
   "condition": "Mint | Excellent | Good | Fair | Poor",
   "rarity": "Common | Uncommon | Rare | Very Rare | Extremely Rare",
-  "rarityNote": "specific note about rarity or authenticity — e.g. 'First edition', 'Real Princess Diana Beanie Baby has a PVC pellet tag', 'Standard mass production item'",
+  "rarityNote": "specific note about rarity, limited editions, or authenticity markers visible in photo",
   "estimatedValue": {
     "low": 0,
     "high": 0,
     "best": 0
   },
-  "recentSales": "2-3 sentences summarizing recent sold prices on eBay/Poshmark/Etsy for this exact item",
-  "bestPlatform": "eBay | Poshmark | Etsy | Facebook Marketplace | OfferUp | Mercari",
-  "bestPlatformReason": "one sentence why this platform is best for this item",
-  "ebayTitle": "optimized eBay listing title under 80 characters with key search terms",
-  "listingDescription": "full ready-to-post listing description, 3-4 paragraphs, covering item details, condition, what's included, shipping notes"
+  "recentSales": "2-3 sentences on recent SOLD (not asking) prices for this exact item including handedness/specs if relevant. Left-handed instruments typically sell for 10-20% more than right-handed.",
+  "bestPlatform": "eBay | Poshmark | Etsy | Facebook Marketplace | OfferUp | Mercari | Reverb",
+  "bestPlatformReason": "one sentence why this platform is best",
+  "ebayTitle": "optimized listing title under 80 chars — MUST include handedness (Left-Handed/LH) and string count if instrument",
+  "listingDescription": "full ready-to-post listing, 3-4 paragraphs. For instruments: MUST mention handedness, string count, scale length if visible, what's included (case, strap, etc), condition details"
 }
 
-Be specific and accurate. Base prices on real current market data from your training. If you cannot identify the item clearly, say so in the name field.`;
+If you are uncertain about any spec (especially handedness or string count), say so explicitly in the description rather than guessing wrong.`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
